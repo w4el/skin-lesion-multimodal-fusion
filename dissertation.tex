@@ -1,0 +1,232 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{subcaption}
+
+% Harvard referencing via natbib
+\usepackage[round]{natbib}
+\bibliographystyle{agsm}
+
+\begin{document}
+
+\title{Cross-Attention Multimodal Fusion for Skin Lesion Classification on HAM10000: A Comparative Study Against Image-Only, Metadata-Only, Concatenation and Gated-Fusion Baselines}
+
+\author{\IEEEauthorblockN{Wael Al Mobarak}
+\IEEEauthorblockA{\textit{School of Electronic Engineering and Computer Science} \\
+\textit{Queen Mary University of London}\\
+London, United Kingdom \\
+ec251070@qmul.ac.uk}
+}
+
+\maketitle
+
+\begin{abstract}
+Automated skin lesion classification from dermoscopic images can support early detection of melanoma and other skin conditions. While most systems rely on image data alone, clinical metadata such as patient age, sex and lesion location may provide complementary diagnostic signals. However, the effectiveness of different multimodal fusion strategies relative to image-only models has not been consistently established under controlled experimental conditions, and reported results on the HAM10000 benchmark vary partly due to lesion-level data leakage across evaluation partitions. This study presents a controlled comparison of five classification approaches on HAM10000: an image-only CNN, a metadata-only MLP, concatenation fusion, gated fusion and cross-attention fusion. All models share the same EfficientNet-B0 backbone and are evaluated under a lesion-level leakage-controlled split protocol using identical training conditions. Results are reported as mean and standard deviation across multiple random seeds, with statistical significance assessed via McNemar's test and bootstrapped confidence intervals. Grad-CAM and SHAP analyses provide a plausibility inspection of model attention patterns and metadata contributions.
+% UPDATE with actual key findings once results are in
+\end{abstract}
+
+\begin{IEEEkeywords}
+skin lesion classification, multimodal fusion, cross-attention, HAM10000, data leakage, deep learning
+\end{IEEEkeywords}
+
+% ============================================================
+\section{Introduction}
+\label{sec:introduction}
+% ============================================================
+
+Skin cancer is among the most prevalent cancers globally, and early detection through dermoscopic examination significantly improves patient outcomes. Automated classification systems based on convolutional neural networks (CNNs) have shown strong performance on dermoscopic image benchmarks, yet the majority of these systems operate on image data alone \citep{tschandl2018ham10000}.
+
+In clinical practice, dermatologists routinely incorporate patient demographics and lesion context into their diagnostic reasoning. A melanoma presentation in a 70-year-old patient on the trunk carries different prior probability than the same visual pattern in a 20-year-old on the scalp. This suggests that integrating clinical metadata with image features could improve automated classification.
+
+Several studies have explored multimodal approaches that combine images with tabular clinical data. The most common fusion strategy is simple feature concatenation, where image and metadata feature vectors are joined before a classification head \citep{pacheco2021attention}. More recently, attention-based mechanisms have been proposed for learning dynamic interactions between modalities \citep{das2025comparative, alfahdawi2025novel}. However, the relative effectiveness of these strategies has not been consistently established on shared benchmarks under controlled conditions.
+
+A further complication is that reported performance on the widely used HAM10000 dataset varies considerably across studies. \citet{adebiyi2024accurate} demonstrated that some of this variation stems from lesion-level data leakage: because HAM10000 contains multiple images of the same lesion, random splitting without grouping by lesion identifier allows near-duplicate images to appear in both training and test sets, artificially inflating metrics.
+
+The contribution of this work is not a novel architecture but a controlled experimental comparison. Specifically, this study investigates whether cross-attention fusion produces a measurable and statistically reliable improvement over four baselines (image-only, metadata-only, concatenation and gated fusion) when all models share the same backbone, training protocol and leakage-controlled evaluation split. Interpretability analyses using Grad-CAM and SHAP are framed as plausibility inspections rather than evidence of clinical trustworthiness.
+
+% ============================================================
+\section{Related Work}
+\label{sec:related_work}
+% ============================================================
+
+\subsection{Image-Only Skin Lesion Classification}
+
+Deep learning approaches to dermoscopic image classification have progressed rapidly since the introduction of large-scale benchmarks. The HAM10000 dataset \citep{tschandl2018ham10000} provides over 10,000 dermoscopic images across seven diagnostic categories, making it one of the most widely used benchmarks in the field. Recent architectures including EfficientNet variants and vision transformers have achieved strong performance on this dataset \citep{ieracitano2025robust, wu2025dsscc}.
+
+However, direct comparison across studies is complicated by inconsistent evaluation protocols. \citet{adebiyi2024accurate} highlighted that many published results on HAM10000 fail to account for the presence of multiple images per lesion. When images of the same lesion appear in both training and evaluation partitions, models can achieve high accuracy by memorising lesion-specific features rather than learning generalisable diagnostic patterns. This lesion-level leakage can inflate reported metrics substantially.
+
+\subsection{Multimodal Fusion Strategies}
+
+The integration of clinical metadata with image features has been explored through several fusion paradigms. Early fusion approaches concatenate raw or minimally processed metadata with image inputs, while late fusion strategies combine separately learned feature representations \citep{pacheco2021attention}.
+
+\citet{pacheco2021attention} proposed an attention-based mechanism for combining dermoscopic images with patient metadata, demonstrating improvements over concatenation baselines on the PAD-UFES-20 dataset. Their approach uses metadata to modulate image feature processing through learned attention weights.
+
+\citet{das2025comparative} conducted a comparative analysis of multimodal architectures for skin lesion detection, evaluating several fusion strategies including cross-modal attention. Their work found that attention-based fusion can outperform concatenation in some configurations, though results varied across datasets and experimental settings.
+
+\citet{alfahdawi2025novel} proposed a multi-modal multi-label framework for skin lesion classification, incorporating multiple attention mechanisms to capture inter-modal dependencies. \citet{wang2024skin} investigated multimodal fusion with a focus on demographic fairness, demonstrating that metadata integration can affect model performance differently across patient subgroups.
+
+\subsection{Cross-Attention Mechanisms}
+
+Cross-attention, originally developed for machine translation and vision-language tasks, enables one modality to attend to relevant features in another. In the context of skin lesion classification, cross-attention allows image patch features to be modulated by clinical context. The key design choice is the directionality of attention: using image features as queries and metadata as keys and values allows each spatial region to attend to clinical context, which mirrors how metadata might inform the interpretation of visual patterns.
+
+\subsection{Position of This Work}
+
+Cross-attention and metadata fusion have already been studied in this domain. The contribution of this project is therefore not the fusion technique itself but a controlled comparison under a leakage-aware protocol with multi-seed evaluation and statistical testing, addressing the methodological gaps identified by \citet{adebiyi2024accurate}.
+
+% ============================================================
+\section{Methodology}
+\label{sec:methodology}
+% ============================================================
+
+\subsection{Dataset}
+
+The HAM10000 dataset \citep{tschandl2018ham10000} comprises 10,015 dermoscopic images across seven diagnostic categories: melanocytic nevi (nv, 67\%), melanoma (mel, 11\%), benign keratosis-like lesions (bkl, 11\%), basal cell carcinoma (bcc, 5\%), actinic keratoses (akiec, 3\%), vascular lesions (vasc, 1.4\%) and dermatofibroma (df, 1.2\%). The dataset exhibits substantial class imbalance, with nevi comprising approximately two-thirds of all samples.
+
+The available clinical metadata is limited to three fields: patient age, sex and anatomical localisation of the lesion. This is referred to throughout as limited clinical metadata rather than full clinical context.
+
+\subsection{Leakage-Controlled Split Protocol}
+
+HAM10000 contains multiple images of the same lesion, identified by the \texttt{lesion\_id} field. A grouped stratified split was implemented to ensure that all images sharing a \texttt{lesion\_id} are assigned to the same partition. The data was divided into training (70\%), validation (15\%) and test (15\%) sets.
+
+This protocol prevents lesion-level leakage between partitions. However, it does not guarantee patient-level leakage prevention, as HAM10000 does not provide a reliable patient identifier. This limitation is acknowledged as a caveat of the experimental design.
+
+\subsection{Preprocessing}
+
+Images were resized to $224 \times 224$ pixels and normalised using ImageNet statistics. Training augmentations included random horizontal and vertical flips, random rotation ($\pm 20^{\circ}$), colour jitter and random resized cropping (scale 0.8--1.0). Validation and test images received only resizing, centre cropping and normalisation.
+
+Metadata encoding used z-score normalisation for age (computed from training set statistics only), one-hot encoding for sex (male, female, unknown) and one-hot encoding for anatomical localisation (15 categories). Missing age values were imputed using the training set median with an additional binary missing indicator feature. The resulting metadata vector has a dimensionality of 20.
+
+\subsection{Model Architectures}
+
+Five model variants were implemented, all sharing the same EfficientNet-B0 backbone \citep{tan2019efficientnet} pretrained on ImageNet to isolate the effect of the fusion strategy.
+
+\subsubsection{Image-Only CNN}
+The EfficientNet-B0 backbone produces a 1,280-dimensional pooled feature vector, which is passed through dropout and a linear classification head mapping to seven classes.
+
+\subsubsection{Metadata-Only MLP}
+A two-layer MLP processes the 20-dimensional metadata vector through hidden layers of 128 and 64 units with ReLU activations and dropout, followed by a linear classifier. This baseline establishes the classification floor achievable from metadata alone.
+
+\subsubsection{Concatenation Fusion}
+Image features (1,280-dim) and metadata features (64-dim from the MLP hidden layer) are concatenated into a 1,344-dimensional vector, passed through a fusion head with a 256-unit hidden layer and classified.
+
+\subsubsection{Gated Fusion}
+Both modalities are projected to a common 256-dimensional space. A learned gating network produces element-wise weights $\mathbf{g} = \sigma(\mathbf{W}_g[\mathbf{f}_{\text{img}}; \mathbf{f}_{\text{meta}}] + \mathbf{b}_g)$, and the fused representation is computed as $\mathbf{f}_{\text{fused}} = \mathbf{g} \odot \mathbf{f}_{\text{img}} + (1 - \mathbf{g}) \odot \mathbf{f}_{\text{meta}}$.
+
+\subsubsection{Cross-Attention Fusion}
+The EfficientNet-B0 feature map is extracted before global average pooling, yielding $49 \times 1{,}280$ spatial features (from the $7 \times 7$ feature map). These are projected to a $d$-dimensional space. Metadata fields are projected as separate tokens (age, sex, localisation), producing $3 \times d$ metadata tokens.
+
+Cross-attention is applied with image patches as queries and metadata tokens as keys and values:
+
+\begin{equation}
+\text{Attention}(\mathbf{Q}, \mathbf{K}, \mathbf{V}) = \text{softmax}\left(\frac{\mathbf{Q}\mathbf{K}^T}{\sqrt{d_k}}\right)\mathbf{V}
+\end{equation}
+
+where $\mathbf{Q} \in \mathbb{R}^{49 \times d}$ are image patch projections and $\mathbf{K}, \mathbf{V} \in \mathbb{R}^{3 \times d}$ are metadata token projections. Each attention block includes layer normalisation, a residual connection and a feedforward sublayer. The attended features are globally averaged and classified.
+
+This directionality allows each image region to be contextualised by clinical information, reflecting how metadata might inform the interpretation of local visual patterns.
+
+\subsection{Training Protocol}
+
+All models were trained with AdamW optimisation, cosine annealing learning rate scheduling, mixed-precision training and early stopping based on validation macro-F1 with a patience of 10 epochs. Class-weighted cross-entropy loss was used alongside weighted random sampling to address class imbalance. All models received the same hyperparameter search budget for fair comparison.
+
+\subsection{Evaluation}
+
+Models were evaluated using macro-averaged F1 score, one-vs-rest AUROC (macro-averaged), balanced accuracy, per-class precision, recall and F1, confusion matrices and melanoma sensitivity (recall for the melanoma class). Each configuration was run across three random seeds and reported as mean $\pm$ standard deviation. McNemar's test and bootstrapped 95\% confidence intervals on macro-F1 differences were used for pairwise statistical comparison.
+
+% ============================================================
+\section{Results}
+\label{sec:results}
+% ============================================================
+
+% TODO: Insert actual results once training is complete
+
+\subsection{Baseline Comparison}
+
+% Table 1: Main results table
+\begin{table*}[t]
+\caption{Test set performance across all models (mean $\pm$ std over 3 seeds). Best results in bold.}
+\label{tab:main_results}
+\centering
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Model} & \textbf{Macro-F1} & \textbf{AUROC} & \textbf{Balanced Acc.} & \textbf{Mel. Sensitivity} \\
+\midrule
+Image-Only CNN     & -- & -- & -- & -- \\
+Metadata-Only MLP  & -- & -- & -- & -- \\
+Concatenation      & -- & -- & -- & -- \\
+Gated Fusion       & -- & -- & -- & -- \\
+Cross-Attention    & -- & -- & -- & -- \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+% TODO: Fill in Table 1 with actual results
+
+\subsection{Statistical Comparison}
+
+% Table 2: Statistical tests
+\begin{table}[htbp]
+\caption{Statistical comparison of cross-attention vs baselines.}
+\label{tab:statistical}
+\centering
+\begin{tabular}{lcc}
+\toprule
+\textbf{Comparison} & \textbf{F1 Diff [95\% CI]} & \textbf{McNemar $p$} \\
+\midrule
+vs Image-Only   & -- & -- \\
+vs Concat       & -- & -- \\
+vs Gated        & -- & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% TODO: Fill in Table 2
+
+\subsection{Per-Class Analysis}
+
+% TODO: Confusion matrices, per-class P/R/F1
+
+\subsection{Ablation Studies}
+
+% TODO: Focal loss, reverse attention direction
+
+\subsection{Interpretability Analysis}
+
+% TODO: Grad-CAM figures, SHAP analysis
+
+% ============================================================
+\section{Discussion}
+\label{sec:discussion}
+% ============================================================
+
+% TODO: Interpret results, discuss whether cross-attention helped,
+% comment on metadata limitations, failure modes, artefact detection
+
+% ============================================================
+\section{Conclusion}
+\label{sec:conclusion}
+% ============================================================
+
+% TODO: Summary of findings, limitations, future work
+
+% ============================================================
+\section*{Acknowledgements}
+
+% TODO: Acknowledge supervisor, QMUL resources
+
+% ============================================================
+% Harvard-style references
+\bibliography{references}
+
+% ============================================================
+\appendix
+\section{Generative AI Accountability Statement}
+% TODO: Complete and include the signed Gen AI statement
+
+\end{document}

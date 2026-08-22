@@ -1,0 +1,27 @@
+@"
+# Data
+data/
+!data/.gitkeep
+
+# Model checkpoints and results
+results/*.pth
+results/xai/*.npy
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.ipynb_checkpoints/
+
+# Environment
+.env
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+"@ | Out-File -FilePath .gitignore -Encoding utf8
