@@ -1,0 +1,36 @@
+{
+  "sizes": {
+    "train": 7002,
+    "val": 1519,
+    "test": 1494
+  },
+  "target_sizes": {
+    "train": 7002,
+    "val": 1519,
+    "test": 1494
+  },
+  "n_test_images_sharing_lesion_with_train": 526,
+  "pct_test_contaminated": 35.21,
+  "n_val_images_sharing_lesion_with_train": 540,
+  "pct_val_contaminated": 35.55,
+  "n_lesions_spanning_train_and_test": 491,
+  "n_lesions_spanning_train_and_val": 511,
+  "class_distribution_train": {
+    "akiec": 0.0327,
+    "bcc": 0.0513,
+    "bkl": 0.1097,
+    "df": 0.0116,
+    "mel": 0.1111,
+    "nv": 0.6695,
+    "vasc": 0.0141
+  },
+  "class_distribution_test": {
+    "akiec": 0.0328,
+    "bcc": 0.0515,
+    "bkl": 0.1098,
+    "df": 0.0114,
+    "mel": 0.1111,
+    "nv": 0.6693,
+    "vasc": 0.0141
+  }
+}

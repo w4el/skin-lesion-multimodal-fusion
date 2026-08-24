@@ -1,0 +1,102 @@
+{
+  "model_name": "cross_attention_leaky",
+  "seeds": [
+    42,
+    123,
+    456
+  ],
+  "per_seed_metrics": [
+    {
+      "macro_f1": 0.7384080238934,
+      "balanced_accuracy": 0.8195318822607106,
+      "auroc": 0.9673792688108998,
+      "mel_sensitivity": 0.8253012048192772
+    },
+    {
+      "macro_f1": 0.7424283486952554,
+      "balanced_accuracy": 0.8195063390400755,
+      "auroc": 0.9653651804603361,
+      "mel_sensitivity": 0.8012048192771084
+    },
+    {
+      "macro_f1": 0.7468855952028972,
+      "balanced_accuracy": 0.8331517339826313,
+      "auroc": 0.9686220341056346,
+      "mel_sensitivity": 0.8614457831325302
+    }
+  ],
+  "aggregated": {
+    "macro_f1": {
+      "mean": 0.7425739892638509,
+      "std": 0.003462485832300085,
+      "values": [
+        0.7384080238934,
+        0.7424283486952554,
+        0.7468855952028972
+      ]
+    },
+    "balanced_accuracy": {
+      "mean": 0.8240633184278058,
+      "std": 0.006426488729569497,
+      "values": [
+        0.8195318822607106,
+        0.8195063390400755,
+        0.8331517339826313
+      ]
+    },
+    "auroc": {
+      "mean": 0.9671221611256234,
+      "std": 0.0013419766982812054,
+      "values": [
+        0.9673792688108998,
+        0.9653651804603361,
+        0.9686220341056346
+      ]
+    },
+    "mel_sensitivity": {
+      "mean": 0.8293172690763052,
+      "std": 0.024756682742847327,
+      "values": [
+        0.8253012048192772,
+        0.8012048192771084,
+        0.8614457831325302
+      ]
+    }
+  },
+  "leakage_stats": {
+    "sizes": {
+      "train": 7002,
+      "val": 1519,
+      "test": 1494
+    },
+    "target_sizes": {
+      "train": 7002,
+      "val": 1519,
+      "test": 1494
+    },
+    "n_test_images_sharing_lesion_with_train": 526,
+    "pct_test_contaminated": 35.21,
+    "n_val_images_sharing_lesion_with_train": 540,
+    "pct_val_contaminated": 35.55,
+    "n_lesions_spanning_train_and_test": 491,
+    "n_lesions_spanning_train_and_val": 511,
+    "class_distribution_train": {
+      "akiec": 0.0327,
+      "bcc": 0.0513,
+      "bkl": 0.1097,
+      "df": 0.0116,
+      "mel": 0.1111,
+      "nv": 0.6695,
+      "vasc": 0.0141
+    },
+    "class_distribution_test": {
+      "akiec": 0.0328,
+      "bcc": 0.0515,
+      "bkl": 0.1098,
+      "df": 0.0114,
+      "mel": 0.1111,
+      "nv": 0.6693,
+      "vasc": 0.0141
+    }
+  }
+}

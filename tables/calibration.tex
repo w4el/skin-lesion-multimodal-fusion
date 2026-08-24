@@ -1,0 +1,20 @@
+% Generated file. Do not edit by hand.
+% Regenerate with the corresponding run_make_*.py script.
+\begin{table}[htbp]
+\caption{Expected calibration error (10 equal-width confidence bins, top-label, mean $\pm$ std over three seeds). Lower is better. Calibration measures whether predicted confidence matches observed accuracy and is independent of ranking quality.}
+\label{tab:calibration}
+\centering
+\small
+\begin{tabular}{lc}
+\toprule
+\textbf{Model} & \textbf{ECE} \\
+\midrule
+Metadata-Only MLP & 0.538 $\pm$ 0.020 \\
+Image-Only CNN & \textbf{0.144 $\pm$ 0.026} \\
+Concatenation & 0.172 $\pm$ 0.023 \\
+Gated Fusion & 0.183 $\pm$ 0.009 \\
+Cross-Attention & 0.173 $\pm$ 0.010 \\
+Cross-Attention (reversed) & 0.174 $\pm$ 0.024 \\
+\bottomrule
+\end{tabular}
+\end{table}

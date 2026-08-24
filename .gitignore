@@ -1,11 +1,22 @@
-@"
-# Data
+# Data (public dataset, see README for download instructions)
 data/
 !data/.gitkeep
 
-# Model checkpoints and results
+# Model checkpoints and large binaries
 results/*.pth
 results/xai/*.npy
+results/probs/*.npy
+
+# LaTeX build artefacts
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.synctex.gz
+*.fdb_latexmk
+*.fls
+*.toc
 
 # Python
 __pycache__/
@@ -16,6 +27,7 @@ __pycache__/
 # Environment
 .env
 *.egg-info/
+.venv/
 
 # IDE
 .vscode/
@@ -24,4 +36,3 @@ __pycache__/
 # OS
 .DS_Store
 Thumbs.db
-"@ | Out-File -FilePath .gitignore -Encoding utf8

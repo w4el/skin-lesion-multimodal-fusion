@@ -1,0 +1,20 @@
+% Generated file. Do not edit by hand.
+% Regenerate with the corresponding run_make_*.py script.
+\begin{table*}[t]
+\caption{Per-seed statistical comparison of cross-attention against each baseline. Each seed is an independent evaluation on the same 1{,}494-image test set. McNemar $p$ is the chi-square approximation with continuity correction; the sign of the macro-F1 difference is CA minus baseline.}
+\label{tab:statistical_perseed}
+\centering
+\small
+\begin{tabular}{lccccccccc}
+\toprule
+\multirow{2}{*}{\textbf{Comparison}} & \multicolumn{3}{c}{\textbf{Seed 42}} & \multicolumn{3}{c}{\textbf{Seed 123}} & \multicolumn{3}{c}{\textbf{Seed 456}} \\
+ & $p$ & $\Delta$F1 & favours & $p$ & $\Delta$F1 & favours & $p$ & $\Delta$F1 & favours \\
+\midrule
+CA vs Metadata-Only MLP & $<0.001$*** & $+0.591$ & CA & $<0.001$*** & $+0.595$ & CA & $<0.001$*** & $+0.652$ & CA \\
+CA vs Image-Only CNN & $0.0052$** & $+0.015$ & base & $<0.001$*** & $+0.036$ & CA & $<0.001$*** & $+0.013$ & base \\
+CA vs Concatenation & $<0.001$*** & $-0.026$ & CA & $0.095$ & $-0.040$ & base & $<0.001$*** & $+0.031$ & CA \\
+CA vs Gated Fusion & $<0.001$*** & $+0.052$ & CA & $<0.001$*** & $-0.004$ & CA & $<0.001$*** & $+0.021$ & CA \\
+CA vs Cross-Attention (reversed) & $0.307$ & $-0.000$ & CA & $0.0059$** & $+0.012$ & CA & $<0.001$*** & $+0.013$ & base \\
+\bottomrule
+\end{tabular}
+\end{table*}

@@ -1,0 +1,21 @@
+% Generated file. Do not edit by hand.
+% Regenerate with the corresponding run_make_*.py script.
+\begin{table*}[t]
+\caption{Test set performance across all models (mean $\pm$ std over three seeds, best in bold). The majority-class row predicts melanocytic nevi for every sample and is included as the reference point for the metadata-only baseline. Parameter counts include the shared EfficientNet-B0 backbone.}
+\label{tab:main_results}
+\centering
+\begin{tabular}{lrcccc}
+\toprule
+\textbf{Model} & \textbf{Params} & \textbf{Macro-F1} & \textbf{AUROC} & \textbf{Balanced Acc.} & \textbf{Mel. Sensitivity} \\
+\midrule
+Majority class (nv) & -- & 0.114 & -- & 0.143 & 0.000 \\
+\midrule
+Metadata-Only MLP & 0.01M & 0.051 $\pm$ 0.001 & 0.721 $\pm$ 0.018 & 0.336 $\pm$ 0.006 & 0.000 $\pm$ 0.000 \\
+Image-Only CNN & 4.02M & 0.642 $\pm$ 0.035 & 0.944 $\pm$ 0.006 & 0.692 $\pm$ 0.018 & 0.777 $\pm$ 0.018 \\
+Concatenation & 4.36M & \textbf{0.675 $\pm$ 0.008} & 0.946 $\pm$ 0.002 & \textbf{0.760 $\pm$ 0.016} & 0.774 $\pm$ 0.048 \\
+Gated Fusion & 4.50M & 0.641 $\pm$ 0.038 & 0.941 $\pm$ 0.004 & 0.726 $\pm$ 0.041 & \textbf{0.809 $\pm$ 0.009} \\
+Cross-Attention & 5.17M & 0.663 $\pm$ 0.028 & \textbf{0.954 $\pm$ 0.003} & 0.747 $\pm$ 0.019 & 0.758 $\pm$ 0.009 \\
+Cross-Attention (reversed) & 5.17M & 0.655 $\pm$ 0.025 & 0.954 $\pm$ 0.003 & 0.726 $\pm$ 0.032 & 0.783 $\pm$ 0.047 \\
+\bottomrule
+\end{tabular}
+\end{table*}

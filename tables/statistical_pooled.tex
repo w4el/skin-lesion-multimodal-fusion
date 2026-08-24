@@ -1,0 +1,19 @@
+% Generated file. Do not edit by hand.
+% Regenerate with the corresponding run_make_*.py script.
+\begin{table*}[t]
+\caption{Cross-attention (CA) against each baseline on pooled test predictions. $b_{01}$ counts cases where CA is correct and the baseline is not; $b_{10}$ the reverse. McNemar's test compares these counts, so a significant result indicates a difference in plain accuracy in the direction of the larger count. Bootstrap 95\% CIs use 5{,}000 resamples. Pooled predictions repeat the same 1{,}494 test images across three seeds and are therefore not independent; see Table~\ref{tab:statistical_perseed}. Significance: * $p<0.05$, ** $p<0.01$, *** $p<0.001$.}
+\label{tab:statistical_pooled}
+\centering
+\small
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Comparison} & $b_{01}$ & $b_{10}$ & \textbf{McNemar $p$} & \textbf{Favours} & \textbf{Macro-F1 diff [95\% CI]} \\
+\midrule
+CA vs Metadata-Only MLP & 3099 & 39 & $<0.001$*** & CA & $+0.611$ [$+0.581$, $+0.638$] \\
+CA vs Image-Only CNN & 398 & 422 & $0.422$ & baseline & $+0.021$ [$-0.012$, $+0.055$] \\
+CA vs Concatenation & 413 & 320 & $<0.001$*** & CA & $-0.012$ [$-0.041$, $+0.016$] \\
+CA vs Gated Fusion & 477 & 226 & $<0.001$*** & CA & $+0.023$ [$-0.009$, $+0.053$] \\
+CA vs Cross-Attention (reversed) & 328 & 340 & $0.670$ & baseline & $+0.008$ [$-0.022$, $+0.038$] \\
+\bottomrule
+\end{tabular}
+\end{table*}

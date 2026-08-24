@@ -1,0 +1,25 @@
+% Generated file. Do not edit by hand.
+% Regenerate with the corresponding run_make_*.py script.
+\begin{table}[htbp]
+\caption{Concatenation and cross-attention under two evaluation protocols (mean $\pm$ std over three seeds). The grouped split assigns all images of a lesion to one partition; the non-grouped split is matched on partition sizes and class distribution and differs only in assigning images independently, so 35.21\% of test images share a lesion with training. The final row gives the difference between the two models under each protocol.}
+\label{tab:leakage}
+\centering
+\small
+\begin{tabular}{llcc}
+\toprule
+\textbf{Metric} & \textbf{Model} & \textbf{Grouped} & \textbf{Non-grouped} \\
+\midrule
+\multirow{3}{*}{Macro-F1} & Concatenation & 0.675 $\pm$ 0.008 & 0.736 $\pm$ 0.027 \\
+ & Cross-Attention & 0.663 $\pm$ 0.028 & 0.743 $\pm$ 0.003 \\
+ & \textit{Difference} & $-0.011$ & $+0.006$ \\
+\midrule
+\multirow{3}{*}{Balanced Acc.} & Concatenation & 0.760 $\pm$ 0.016 & 0.808 $\pm$ 0.022 \\
+ & Cross-Attention & 0.747 $\pm$ 0.019 & 0.824 $\pm$ 0.006 \\
+ & \textit{Difference} & $-0.013$ & $+0.017$ \\
+\midrule
+\multirow{3}{*}{AUROC} & Concatenation & 0.946 $\pm$ 0.002 & 0.966 $\pm$ 0.005 \\
+ & Cross-Attention & 0.954 $\pm$ 0.003 & 0.967 $\pm$ 0.001 \\
+ & \textit{Difference} & $+0.008$ & $+0.001$ \\
+\bottomrule
+\end{tabular}
+\end{table}

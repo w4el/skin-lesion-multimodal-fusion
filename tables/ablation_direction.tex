@@ -1,0 +1,17 @@
+% Generated file. Do not edit by hand.
+% Regenerate with the corresponding run_make_*.py script.
+\begin{table}[htbp]
+\caption{Ablations on the cross-attention model (mean $\pm$ std over three seeds). Reversed direction swaps queries with keys and values, so three metadata tokens attend over 49 image patches rather than the reverse; the parameter count is unchanged. Focal loss replaces the class-weighted cross-entropy term, with the weighted sampler retained, so it is a single-variable change of objective rather than an additional imbalance correction. All other settings are identical in every row.}
+\label{tab:ablation_direction}
+\centering
+\small
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Configuration} & \textbf{Macro-F1} & \textbf{AUROC} & \textbf{Balanced Acc.} & \textbf{Mel. Sensitivity} \\
+\midrule
+Primary (image queries, weighted CE) & 0.663 $\pm$ 0.028 & 0.954 $\pm$ 0.003 & 0.747 $\pm$ 0.019 & 0.758 $\pm$ 0.009 \\
+Reversed attention direction & 0.655 $\pm$ 0.025 & 0.954 $\pm$ 0.003 & 0.726 $\pm$ 0.032 & 0.783 $\pm$ 0.047 \\
+Focal loss objective & 0.715 $\pm$ 0.028 & 0.964 $\pm$ 0.001 & 0.724 $\pm$ 0.016 & 0.665 $\pm$ 0.010 \\
+\bottomrule
+\end{tabular}
+\end{table}

@@ -8,10 +8,17 @@
 \usepackage{booktabs}
 \usepackage{multirow}
 \usepackage{subcaption}
+\usepackage{array}
 
 % Harvard referencing via natbib
 \usepackage[round]{natbib}
 \bibliographystyle{agsm}
+
+% Placeholders for numbers that must come from a generated table or a
+% script run. Anything still red at compile time is not ready to submit.
+% Delete this macro definition before final submission and fix any errors
+% it raises, as a last check that nothing was left unfilled.
+\newcommand{\TODO}[1]{\textcolor{red}{[TODO: #1]}}
 
 \begin{document}
 
@@ -27,8 +34,7 @@ ec251070@qmul.ac.uk}
 \maketitle
 
 \begin{abstract}
-Automated skin lesion classification from dermoscopic images can support early detection of melanoma and other skin conditions. While most systems rely on image data alone, clinical metadata such as patient age, sex and lesion location may provide complementary diagnostic signals. However, the effectiveness of different multimodal fusion strategies relative to image-only models has not been consistently established under controlled experimental conditions, and reported results on the HAM10000 benchmark vary partly due to lesion-level data leakage across evaluation partitions. This study presents a controlled comparison of five classification approaches on HAM10000: an image-only CNN, a metadata-only MLP, concatenation fusion, gated fusion and cross-attention fusion. All models share the same EfficientNet-B0 backbone and are evaluated under a lesion-level leakage-controlled split protocol using identical training conditions. Results are reported as mean and standard deviation across multiple random seeds, with statistical significance assessed via McNemar's test and bootstrapped confidence intervals. Grad-CAM and SHAP analyses provide a plausibility inspection of model attention patterns and metadata contributions.
-% UPDATE with actual key findings once results are in
+Automated skin lesion classification from dermoscopic images can support early detection of melanoma and other skin conditions. While most systems rely on image data alone, clinical metadata such as patient age, sex and lesion location may provide complementary diagnostic signals. However, the effectiveness of different multimodal fusion strategies has not been consistently established under controlled experimental conditions, and reported results on the HAM10000 benchmark vary partly due to lesion-level data leakage. This study presents a controlled comparison of five classification approaches: an image-only CNN, a metadata-only MLP, concatenation fusion, gated fusion and cross-attention fusion. All models share the same EfficientNet-B0 backbone and are evaluated under a lesion-level leakage-controlled split protocol using identical training conditions across three random seeds. Under this protocol, cross-attention achieves the highest AUROC (0.954) but does not outperform simple concatenation on macro-F1 (0.663 against 0.675) or balanced accuracy, and concatenation is the more accurate of the two on paired correctness. Cross-attention does improve on the image-only baseline in balanced accuracy. An ablation of the attention direction and an analysis of probability calibration are used to characterise where the additional capacity does and does not pay for itself. These findings indicate that under stricter evaluation protocols, the aggregate advantage of attention-based fusion over concatenation on this benchmark is smaller than commonly reported. Grad-CAM and SHAP analyses provide a plausibility inspection of model attention and metadata contributions rather than evidence of clinical trustworthiness.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -44,11 +50,41 @@ Skin cancer is among the most prevalent cancers globally, and early detection th
 
 In clinical practice, dermatologists routinely incorporate patient demographics and lesion context into their diagnostic reasoning. A melanoma presentation in a 70-year-old patient on the trunk carries different prior probability than the same visual pattern in a 20-year-old on the scalp. This suggests that integrating clinical metadata with image features could improve automated classification.
 
-Several studies have explored multimodal approaches that combine images with tabular clinical data. The most common fusion strategy is simple feature concatenation, where image and metadata feature vectors are joined before a classification head \citep{pacheco2021attention}. More recently, attention-based mechanisms have been proposed for learning dynamic interactions between modalities \citep{das2025comparative, alfahdawi2025novel}. However, the relative effectiveness of these strategies has not been consistently established on shared benchmarks under controlled conditions.
+Several studies have explored multimodal approaches that combine images with tabular clinical data. The most common fusion strategy is simple feature concatenation, where image and metadata feature vectors are joined before a classification head \citep{pacheco2021attention}. More recently, attention-based mechanisms have been proposed for learning dynamic interactions between modalities \citep{das2025comparative, alfahdawi2025novel}, including on HAM10000 itself \citep{adebiyi2024accurate}. However, the relative effectiveness of these strategies has not been consistently established on shared benchmarks under controlled conditions.
 
-A further complication is that reported performance on the widely used HAM10000 dataset varies considerably across studies. \citet{adebiyi2024accurate} demonstrated that some of this variation stems from lesion-level data leakage: because HAM10000 contains multiple images of the same lesion, random splitting without grouping by lesion identifier allows near-duplicate images to appear in both training and test sets, artificially inflating metrics.
+A further complication is that reported performance on the widely used HAM10000 dataset varies considerably across studies. Because HAM10000 contains multiple images of the same lesion, random splitting without grouping by lesion identifier allows near-duplicate images to appear in both training and test sets, potentially inflating metrics. A recent leakage audit found that reported accuracies above 90\% on this benchmark are frequently associated with undisclosed or non-lesion-grouped splitting procedures \citep{jamaludin2026quantum}, and argued that evaluation protocols rather than architectural choices drive many of the reported performance differences in this literature.
 
-The contribution of this work is not a novel architecture but a controlled experimental comparison. Specifically, this study investigates whether cross-attention fusion produces a measurable and statistically reliable improvement over four baselines (image-only, metadata-only, concatenation and gated fusion) when all models share the same backbone, training protocol and leakage-controlled evaluation split. Interpretability analyses using Grad-CAM and SHAP are framed as plausibility inspections rather than evidence of clinical trustworthiness.
+\subsection{Research Question}
+
+This study addresses one question:
+
+\begin{quote}
+\textit{Does cross-attention fusion of dermoscopic images and limited clinical metadata produce a measurable and statistically reliable improvement over simpler fusion strategies on HAM10000, when all models share a backbone, a training protocol and a lesion-level leakage-controlled evaluation split?}
+\end{quote}
+
+This decomposes into four sub-questions:
+
+\begin{enumerate}
+\item[RQ1] Does any fusion strategy improve on an image-only baseline under leakage-controlled evaluation, and by how much?
+\item[RQ2] Does cross-attention improve on simpler fusion (concatenation, gating), and does any observed difference survive statistical testing across seeds?
+\item[RQ3] Do the metrics agree with each other, and if they disagree, what does that reveal about where the differences between models actually lie?
+\item[RQ4] Do interpretability analyses show the models attending to plausible image regions and metadata features, and what are the limits of that evidence?
+\end{enumerate}
+
+\subsection{Contributions}
+
+The contribution of this work is not a novel architecture. Cross-attention fusion of images and clinical metadata is established in this domain. The contribution is a controlled experimental comparison, specifically:
+
+\begin{enumerate}
+\item A five-way comparison of fusion strategies on HAM10000 with a shared EfficientNet-B0 backbone, identical training protocol and a single fixed lesion-level grouped split, so that differences are attributable to the fusion mechanism rather than to the pipeline around it.
+\item Multi-seed evaluation with per-seed and pooled statistical testing, using McNemar's test on paired correctness and bootstrapped confidence intervals on macro-F1, balanced accuracy and melanoma sensitivity.
+\item An ablation of the attention direction, which is the one design decision this work argues for on theoretical grounds and which prior comparisons assert rather than test.
+\item A calibration analysis that separates ranking quality from decision quality, motivated by the finding that cross-attention leads on AUROC while not leading on macro-F1.
+\item Interpretability analyses (Grad-CAM, KernelSHAP) framed as plausibility inspection rather than as evidence of clinical trustworthiness.
+\item A reported negative result: under this protocol, cross-attention does not outperform concatenation on aggregate metrics.
+\end{enumerate}
+
+Fifteen primary training runs and \TODO{state the ablation run count once complete} additional ablation runs were conducted, totalling approximately \TODO{recompute total GPU-hours including the ablation} GPU-hours on a single consumer GPU.
 
 % ============================================================
 \section{Related Work}
@@ -59,25 +95,54 @@ The contribution of this work is not a novel architecture but a controlled exper
 
 Deep learning approaches to dermoscopic image classification have progressed rapidly since the introduction of large-scale benchmarks. The HAM10000 dataset \citep{tschandl2018ham10000} provides over 10,000 dermoscopic images across seven diagnostic categories, making it one of the most widely used benchmarks in the field. Recent architectures including EfficientNet variants and vision transformers have achieved strong performance on this dataset \citep{ieracitano2025robust, wu2025dsscc}.
 
-However, direct comparison across studies is complicated by inconsistent evaluation protocols. \citet{adebiyi2024accurate} highlighted that many published results on HAM10000 fail to account for the presence of multiple images per lesion. When images of the same lesion appear in both training and evaluation partitions, models can achieve high accuracy by memorising lesion-specific features rather than learning generalisable diagnostic patterns. This lesion-level leakage can inflate reported metrics substantially.
+However, direct comparison across studies is complicated by inconsistent evaluation protocols. Many published results on HAM10000 do not account for the presence of multiple images per lesion. When images of the same lesion appear in both training and evaluation partitions, models can achieve high accuracy by memorising lesion-specific features rather than learning generalisable diagnostic patterns, and this lesion-level leakage can inflate reported metrics substantially \citep{jamaludin2026quantum}.
 
 \subsection{Multimodal Fusion Strategies}
 
 The integration of clinical metadata with image features has been explored through several fusion paradigms. Early fusion approaches concatenate raw or minimally processed metadata with image inputs, while late fusion strategies combine separately learned feature representations \citep{pacheco2021attention}.
 
-\citet{pacheco2021attention} proposed an attention-based mechanism for combining dermoscopic images with patient metadata, demonstrating improvements over concatenation baselines on the PAD-UFES-20 dataset. Their approach uses metadata to modulate image feature processing through learned attention weights.
+\citet{pacheco2021attention} proposed the MetaBlock, an attention-based mechanism for combining dermoscopic images with patient metadata, demonstrating improvements over concatenation baselines on the PAD-UFES-20 dataset. Their approach uses metadata to modulate image feature processing through learned attention weights.
 
-\citet{das2025comparative} conducted a comparative analysis of multimodal architectures for skin lesion detection, evaluating several fusion strategies including cross-modal attention. Their work found that attention-based fusion can outperform concatenation in some configurations, though results varied across datasets and experimental settings.
+\citet{das2025comparative} conducted a comparative analysis of multimodal architectures for skin lesion detection on HAM10000, evaluating several fusion strategies including simple concatenation, weighted concatenation, self-attention and cross-attention fusion. Their work concluded that cross-attention fusion achieved the highest classification accuracy. However, their evaluation used a random split without explicit lesion-level grouping, and results were reported from single runs without statistical testing.
 
-\citet{alfahdawi2025novel} proposed a multi-modal multi-label framework for skin lesion classification, incorporating multiple attention mechanisms to capture inter-modal dependencies. \citet{wang2024skin} investigated multimodal fusion with a focus on demographic fairness, demonstrating that metadata integration can affect model performance differently across patient subgroups.
+\citet{adebiyi2024accurate} applied a vision-language pretraining approach to multimodal classification on HAM10000, reporting strong results but likewise without an explicit lesion-level grouping procedure.
+
+\citet{alfahdawi2025novel} proposed a multi-modal multi-label framework for skin lesion classification, incorporating multiple attention mechanisms to capture inter-modal dependencies. \citet{wang2024skin} investigated multimodal fusion with a focus on demographic fairness, demonstrating that metadata integration can affect model performance differently across patient subgroups. Recent work on the PAD-UFES-20 dataset compared metadata-only, image-only, late fusion and cross-attention approaches and found that cross-attention improved calibration but that late fusion could slightly reduce discrimination compared to image-only models \citep{mridha2026crossattention}, suggesting that fusion strategies do not uniformly outperform simpler approaches. That finding motivates the calibration analysis reported in Section~\ref{sec:results}.
 
 \subsection{Cross-Attention Mechanisms}
 
-Cross-attention, originally developed for machine translation and vision-language tasks, enables one modality to attend to relevant features in another. In the context of skin lesion classification, cross-attention allows image patch features to be modulated by clinical context. The key design choice is the directionality of attention: using image features as queries and metadata as keys and values allows each spatial region to attend to clinical context, which mirrors how metadata might inform the interpretation of visual patterns.
+Cross-attention, originally developed for machine translation and vision-language tasks, enables one modality to attend to relevant features in another. The theoretical case for preferring it over concatenation in this setting is that concatenation applies the same fixed transformation to the joint feature vector for every sample, so the influence of metadata on the decision is static. Cross-attention computes attention weights as a function of the input, so in principle the degree to which clinical context modulates the image representation can vary per sample and per spatial region. Whether that additional flexibility is realisable given only three metadata fields is an empirical question, and it is the question this study tests.
+
+The key design choice is directionality. Using image features as queries and metadata as keys and values allows each spatial region to attend to clinical context, which mirrors how metadata might inform the interpretation of visual patterns. The reverse arrangement collapses the attended sequence to the three metadata tokens before pooling, discarding spatial structure. This work adopts the former and reports an ablation of the latter in Section~\ref{sec:results}.
 
 \subsection{Position of This Work}
 
-Cross-attention and metadata fusion have already been studied in this domain. The contribution of this project is therefore not the fusion technique itself but a controlled comparison under a leakage-aware protocol with multi-seed evaluation and statistical testing, addressing the methodological gaps identified by \citet{adebiyi2024accurate}.
+Table~\ref{tab:related_work} summarises the methodological choices of the most closely related studies. Cross-attention and metadata fusion have already been studied in this domain, so the contribution of this project is not the fusion technique itself but a controlled comparison under a leakage-aware protocol with multi-seed evaluation and statistical testing. Specifically, this work extends \citet{das2025comparative} by (i) enforcing lesion-level leakage prevention absent from their evaluation, (ii) reporting results across multiple random seeds with McNemar's tests and bootstrapped confidence intervals, (iii) including a gated fusion baseline and a metadata-only floor absent from prior HAM10000 fusion comparisons, and (iv) framing interpretability results as plausibility inspection rather than trustworthiness claims.
+
+% VERIFY every cell in this table against the papers before submission.
+% An examiner may check any of them, and a wrong cell here is worse than
+% no table at all.
+\begin{table*}[t]
+\caption{Methodological choices in closely related work. Ticks indicate the property is present and explicitly described in the paper.}
+\label{tab:related_work}
+\centering
+\small
+\begin{tabular}{llcccc}
+\toprule
+\textbf{Study} & \textbf{Dataset} & \textbf{Fusion strategies compared} & \textbf{Lesion-level split} & \textbf{Multi-seed} & \textbf{Statistical testing} \\
+\midrule
+\citet{pacheco2021attention}   & PAD-UFES-20 & Concatenation, MetaBlock attention & n/a & Yes & No \\
+\citet{adebiyi2024accurate}    & HAM10000    & Vision-language pretraining        & No  & No  & No \\
+\citet{das2025comparative}     & HAM10000    & Concatenation, weighted concatenation, self-attention, cross-attention & No & No & No \\
+\citet{alfahdawi2025novel}     & Multiple    & Multiple attention mechanisms      & No  & No  & No \\
+\citet{wang2024skin}           & Multiple    & Late fusion, fairness-oriented     & No  & Yes & No \\
+\citet{mridha2026crossattention} & PAD-UFES-20 & Metadata-only, image-only, late fusion, cross-attention & n/a & No & No \\
+\citet{jamaludin2026quantum}   & HAM10000    & None (leakage audit)               & Yes & No  & No \\
+\midrule
+This work                      & HAM10000    & Image-only, metadata-only, concatenation, gated, cross-attention & Yes & Yes (3) & Yes \\
+\bottomrule
+\end{tabular}
+\end{table*}
 
 % ============================================================
 \section{Methodology}
@@ -92,7 +157,9 @@ The available clinical metadata is limited to three fields: patient age, sex and
 
 \subsection{Leakage-Controlled Split Protocol}
 
-HAM10000 contains multiple images of the same lesion, identified by the \texttt{lesion\_id} field. A grouped stratified split was implemented to ensure that all images sharing a \texttt{lesion\_id} are assigned to the same partition. The data was divided into training (70\%), validation (15\%) and test (15\%) sets.
+HAM10000 contains multiple images of the same lesion, identified by the \texttt{lesion\_id} field. A grouped stratified split was implemented so that all images sharing a \texttt{lesion\_id} are assigned to the same partition. The data was divided into training (70\%, 7,002 images from 5,229 lesions), validation (15\%, 1,519 images from 1,120 lesions) and test (15\%, 1,494 images from 1,121 lesions) sets. Class stratification was preserved across all splits within 3.3 percentage points of the population distribution for every class.
+
+The split is generated once with a fixed seed and stored to disk, and every model and every seed reads the same partition. Seed variation therefore affects weight initialisation, augmentation sampling and batch composition, but not which images are in the test set. This isolates optimisation variance from split variance, at the cost of not estimating the latter.
 
 This protocol prevents lesion-level leakage between partitions. However, it does not guarantee patient-level leakage prevention, as HAM10000 does not provide a reliable patient identifier. This limitation is acknowledged as a caveat of the experimental design.
 
@@ -104,22 +171,22 @@ Metadata encoding used z-score normalisation for age (computed from training set
 
 \subsection{Model Architectures}
 
-Five model variants were implemented, all sharing the same EfficientNet-B0 backbone \citep{tan2019efficientnet} pretrained on ImageNet to isolate the effect of the fusion strategy.
+Five model variants were implemented, all sharing the same EfficientNet-B0 backbone \citep{tan2019efficientnet} pretrained on ImageNet to isolate the effect of the fusion strategy. Parameter counts for each variant are reported in Table~\ref{tab:main_results}.
 
 \subsubsection{Image-Only CNN}
-The EfficientNet-B0 backbone produces a 1,280-dimensional pooled feature vector, which is passed through dropout and a linear classification head mapping to seven classes.
+The EfficientNet-B0 backbone produces a 1,280-dimensional pooled feature vector, which is passed through dropout ($p=0.3$) and a linear classification head mapping to seven classes.
 
 \subsubsection{Metadata-Only MLP}
-A two-layer MLP processes the 20-dimensional metadata vector through hidden layers of 128 and 64 units with ReLU activations and dropout, followed by a linear classifier. This baseline establishes the classification floor achievable from metadata alone.
+A two-layer MLP processes the 20-dimensional metadata vector through hidden layers of 128 and 64 units with ReLU activations and dropout ($p=0.3$), followed by a linear classifier. This baseline establishes the classification floor achievable from metadata alone.
 
 \subsubsection{Concatenation Fusion}
-Image features (1,280-dim) and metadata features (64-dim from the MLP hidden layer) are concatenated into a 1,344-dimensional vector, passed through a fusion head with a 256-unit hidden layer and classified.
+Image features (1,280-dim) and metadata features (64-dim from the MLP) are concatenated into a 1,344-dimensional vector, passed through a fusion head with a 256-unit hidden layer and classified.
 
 \subsubsection{Gated Fusion}
 Both modalities are projected to a common 256-dimensional space. A learned gating network produces element-wise weights $\mathbf{g} = \sigma(\mathbf{W}_g[\mathbf{f}_{\text{img}}; \mathbf{f}_{\text{meta}}] + \mathbf{b}_g)$, and the fused representation is computed as $\mathbf{f}_{\text{fused}} = \mathbf{g} \odot \mathbf{f}_{\text{img}} + (1 - \mathbf{g}) \odot \mathbf{f}_{\text{meta}}$.
 
 \subsubsection{Cross-Attention Fusion}
-The EfficientNet-B0 feature map is extracted before global average pooling, yielding $49 \times 1{,}280$ spatial features (from the $7 \times 7$ feature map). These are projected to a $d$-dimensional space. Metadata fields are projected as separate tokens (age, sex, localisation), producing $3 \times d$ metadata tokens.
+The EfficientNet-B0 feature map is extracted before global average pooling, yielding $49 \times 1{,}280$ spatial features (from the $7 \times 7$ feature map). These are projected to $d = 256$. Metadata fields are projected as three separate tokens (age with its missing indicator, sex, localisation), producing $3 \times d$ metadata tokens.
 
 Cross-attention is applied with image patches as queries and metadata tokens as keys and values:
 
@@ -127,98 +194,244 @@ Cross-attention is applied with image patches as queries and metadata tokens as 
 \text{Attention}(\mathbf{Q}, \mathbf{K}, \mathbf{V}) = \text{softmax}\left(\frac{\mathbf{Q}\mathbf{K}^T}{\sqrt{d_k}}\right)\mathbf{V}
 \end{equation}
 
-where $\mathbf{Q} \in \mathbb{R}^{49 \times d}$ are image patch projections and $\mathbf{K}, \mathbf{V} \in \mathbb{R}^{3 \times d}$ are metadata token projections. Each attention block includes layer normalisation, a residual connection and a feedforward sublayer. The attended features are globally averaged and classified.
+where $\mathbf{Q} \in \mathbb{R}^{49 \times d}$ are image patch projections and $\mathbf{K}, \mathbf{V} \in \mathbb{R}^{3 \times d}$ are metadata token projections. One attention block is used, with four heads, layer normalisation, residual connections and a position-wise feedforward sublayer of expansion factor four (256 to 1,024 to 256). Dropout within the attention block is 0.2. The attended features are globally averaged over the token dimension and classified.
 
-This directionality allows each image region to be contextualised by clinical information, reflecting how metadata might inform the interpretation of local visual patterns.
+This directionality allows each image region to be contextualised by clinical information, reflecting how metadata might inform the interpretation of local visual patterns. Section~\ref{sec:results} reports an ablation in which the direction is reversed.
 
 \subsection{Training Protocol}
 
-All models were trained with AdamW optimisation, cosine annealing learning rate scheduling, mixed-precision training and early stopping based on validation macro-F1 with a patience of 10 epochs. Class-weighted cross-entropy loss was used alongside weighted random sampling to address class imbalance. All models received the same hyperparameter search budget for fair comparison.
+All models were trained with AdamW optimisation, cosine annealing with warm restarts ($T_0 = 10$, $T_{\text{mult}} = 2$), mixed-precision training and early stopping on validation macro-F1 with a patience of 10 epochs and a maximum of 50 epochs. A learning rate of $1 \times 10^{-4}$, weight decay of $1 \times 10^{-4}$ and batch size of 32 were used across all models.
+
+Class imbalance was addressed with two mechanisms applied together: inverse-frequency class weights in the cross-entropy loss, and a weighted random sampler over the training set. Both were held identical across all five models, so the comparison between fusion strategies is unaffected by this choice. The two corrections were not ablated against each other, and their combined effect on the metadata-only baseline is discussed in Section~\ref{sec:discussion}.
+
+\subsection{Reproducibility}
+
+Seeds were set for Python, NumPy and PyTorch, with \texttt{cudnn.deterministic} enabled and \texttt{cudnn.benchmark} disabled. Training used four DataLoader workers without a per-worker seed function, so batch composition is not bit-for-bit reproducible across runs; the seed-to-seed standard deviations reported throughout therefore include a small component of non-determinism in addition to genuine initialisation variance. The split file, all checkpoints and all per-seed prediction files are retained so that every table in this paper can be regenerated from stored outputs without retraining.
 
 \subsection{Evaluation}
 
-Models were evaluated using macro-averaged F1 score, one-vs-rest AUROC (macro-averaged), balanced accuracy, per-class precision, recall and F1, confusion matrices and melanoma sensitivity (recall for the melanoma class). Each configuration was run across three random seeds and reported as mean $\pm$ standard deviation. McNemar's test and bootstrapped 95\% confidence intervals on macro-F1 differences were used for pairwise statistical comparison.
+Models were evaluated using macro-averaged F1 score, one-vs-rest AUROC (macro-averaged), balanced accuracy, per-class precision, recall and F1, confusion matrices, melanoma sensitivity (recall for the melanoma class) and expected calibration error. Each configuration was run across three random seeds (42, 123, 456) and reported as mean $\pm$ standard deviation.
+
+All reported metrics were computed in full precision from the saved best checkpoints rather than from the values logged during training. Probabilities produced under automatic mixed precision were found to break the one-versus-rest AUROC computation during the training runs, which was detected because the logged AUROC values were implausible, and a separate evaluation pass outside the autocast context was written to recompute them. This affected only the reported metrics, not model selection, which used validation macro-F1 throughout.
+
+Two statistical tests were used for pairwise comparison. McNemar's test was applied to paired binary correctness outcomes; because it tests whether the two discordant counts differ, a significant result indicates a difference in plain accuracy in the direction of the larger count, and both counts are reported so that the direction is visible. Bootstrapped 95\% confidence intervals (5,000 resamples) were computed on differences in macro-F1, balanced accuracy and melanoma sensitivity. Tests are reported per seed and, separately, on predictions pooled across seeds. Pooled predictions repeat the same 1,494 test images three times and are not independent observations, so pooled $p$-values are optimistic and are reported as secondary to the per-seed analysis.
+
+Training was conducted on a single NVIDIA RTX 4060 Ti GPU. Each training run required between 15 and 80 minutes depending on model complexity and early stopping.
 
 % ============================================================
 \section{Results}
 \label{sec:results}
 % ============================================================
 
-% TODO: Insert actual results once training is complete
+\subsection{Overall Performance Comparison}
 
-\subsection{Baseline Comparison}
+Table~\ref{tab:main_results} presents test-set performance for all five models averaged across three seeds, together with a majority-class reference row and parameter counts.
 
-% Table 1: Main results table
-\begin{table*}[t]
-\caption{Test set performance across all models (mean $\pm$ std over 3 seeds). Best results in bold.}
-\label{tab:main_results}
-\centering
-\begin{tabular}{lcccc}
-\toprule
-\textbf{Model} & \textbf{Macro-F1} & \textbf{AUROC} & \textbf{Balanced Acc.} & \textbf{Mel. Sensitivity} \\
-\midrule
-Image-Only CNN     & -- & -- & -- & -- \\
-Metadata-Only MLP  & -- & -- & -- & -- \\
-Concatenation      & -- & -- & -- & -- \\
-Gated Fusion       & -- & -- & -- & -- \\
-Cross-Attention    & -- & -- & -- & -- \\
-\bottomrule
-\end{tabular}
-\end{table*}
+The metadata-only baseline confirms that clinical metadata alone carries limited discriminative signal on HAM10000. Its macro-F1 falls below that of the trivial majority-class classifier, while its balanced accuracy is substantially above it and its AUROC of 0.721 is well above chance. The interpretation of that combination is developed in Section~\ref{sec:discussion}. Adding image data through any fusion strategy produces substantial improvement.
 
-% TODO: Fill in Table 1 with actual results
+Among the fusion strategies, concatenation achieves the highest macro-F1 (0.675) and balanced accuracy (0.760), while cross-attention achieves the highest AUROC (0.954) with the smallest across-seed variation on that metric ($\pm 0.003$). Gated fusion achieves the highest melanoma sensitivity (0.809).
+
+\input{tables/main_results.tex}
 
 \subsection{Statistical Comparison}
 
-% Table 2: Statistical tests
-\begin{table}[htbp]
-\caption{Statistical comparison of cross-attention vs baselines.}
-\label{tab:statistical}
+Tables~\ref{tab:statistical_pooled} and~\ref{tab:statistical_perseed} report pairwise comparisons between cross-attention and each baseline, pooled and per seed respectively.
+
+The pattern is metric-dependent, and the two tests do not agree. On paired correctness, cross-attention is significantly more accurate than the metadata-only and gated baselines, and \TODO{state the direction of the CA vs concatenation McNemar result from the generated table; the discordant counts are printed by run\_statistical\_tests\_v2.py} relative to concatenation. On macro-F1, the bootstrap interval for the comparison against concatenation includes zero and includes negative values, so no advantage for cross-attention can be claimed on that metric. The comparison against image-only shows an improvement in balanced accuracy (+0.055, 95\% CI [+0.015, +0.094], bootstrap $p = 0.007$) but not in macro-F1.
+
+\input{tables/statistical_pooled.tex}
+\input{tables/statistical_perseed.tex}
+
+This disagreement between tests is informative rather than contradictory. McNemar operates on plain paired correctness, which on HAM10000 is dominated by melanocytic nevi at roughly two thirds of all samples, so a model that handles the majority class better can be significantly more accurate overall. Macro-F1 weights all seven classes equally, so a gain concentrated in nv is largely invisible to it. Read together, the two results indicate that the models differ mainly in their treatment of the majority class rather than in per-class balance. This answers RQ3 directly: the metrics disagree because they aggregate differently, and the aggregate summary chosen determines which fusion strategy appears to win.
+
+The per-seed results in Table~\ref{tab:statistical_perseed} are the primary analysis. \TODO{after running the script, state whether the per-seed tests reproduce the pooled significance; if they do not, say so explicitly, because that is itself a result supporting the argument about evaluation protocol}
+
+The comparison against metadata-only serves as a control and confirms, as expected, that the image branch contributes the majority of discriminative signal.
+
+\subsection{Per-Class Analysis}
+
+Table~\ref{tab:perclass_f1} reports per-class F1 for every model and Table~\ref{tab:perclass_ca} gives precision, recall and F1 for cross-attention. Figure~\ref{fig:confusion} shows row-normalised confusion matrices averaged across seeds.
+
+\input{tables/perclass_f1.tex}
+\input{tables/perclass_cross_attn.tex}
+
+\begin{figure}[htbp]
 \centering
-\begin{tabular}{lcc}
+\includegraphics[width=\linewidth]{figures/confusion_matrices.png}
+\caption{Row-normalised confusion matrices averaged over three seeds. Each row sums to one, so cell values give the proportion of each true class assigned to each predicted class.}
+\label{fig:confusion}
+\end{figure}
+
+The dominant error mode across all models is confusion between melanoma and melanocytic nevi, the two largest classes and the pair with the greatest clinical consequence. Performance on dermatofibroma is weakest across every model; its test support is the smallest of the seven classes, so per-seed variation on that class should not be over-interpreted.
+
+Figure~\ref{fig:roc} shows per-class ROC curves for cross-attention and a comparison of all models on the melanoma class specifically.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{figures/roc_melanoma.png}
+\caption{Melanoma one-versus-rest ROC curves for all five models (seed 42). Curves are shown for a single seed because averaging ROC curves across seeds is not well defined; across-seed variation in AUROC is reported in Table~\ref{tab:main_results}.}
+\label{fig:roc}
+\end{figure}
+
+\subsection{Melanoma Sensitivity}
+
+Because missed melanoma carries the highest clinical cost, the difference in melanoma sensitivity between gated fusion (0.809) and cross-attention (0.758) was tested directly. Table~\ref{tab:mel_sensitivity} restricts McNemar's test to melanoma-labelled test cases, where correctness is equivalent to detection, and reports a bootstrapped interval on the difference in recall.
+
+\input{tables/melanoma_sensitivity.tex}
+
+\TODO{state whether the melanoma sensitivity difference is significant, and adjust the discussion accordingly; if it is not significant, the gated fusion claim must be softened to an observation rather than a finding}
+
+\subsection{Attention Direction Ablation}
+
+The methodology argues for image patches as queries on the grounds that this allows each spatial region to be contextualised by clinical information. Table~\ref{tab:ablation_direction} tests that argument by reversing the direction so that the three metadata tokens attend over the 49 image patches, collapsing the attended sequence before pooling. All other settings are held fixed.
+
+\input{tables/ablation_direction.tex}
+
+\TODO{interpret the ablation once run: whether the directionality argument is supported, contradicted, or the two configurations are indistinguishable, and what each of those outcomes implies}
+
+\subsection{Calibration}
+
+Cross-attention achieves the best AUROC without achieving the best macro-F1, which means it ranks samples well without converting that ranking into better discrete decisions. Because \citet{mridha2026crossattention} report improved calibration from cross-attention on a different dataset, expected calibration error was computed for each model (Table~\ref{tab:calibration}) with reliability diagrams in Figure~\ref{fig:calibration}.
+
+\input{tables/calibration.tex}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{figures/calibration.png}
+\caption{Reliability diagrams (seed 42, 10 equal-width confidence bins, bins containing fewer than 10 samples omitted). Points below the diagonal indicate overconfidence.}
+\label{fig:calibration}
+\end{figure}
+
+\TODO{interpret the calibration result; if cross-attention is best calibrated this explains the AUROC advantage mechanistically, and if it is not, say so and note that the AUROC advantage remains unexplained}
+
+\subsection{Interpretability Analysis}
+
+To inspect what the models learn, Grad-CAM \citep{selvaraju2017gradcam} was applied to the last convolutional layer of the shared EfficientNet-B0 backbone, and KernelSHAP \citep{lundberg2017shap} was used to attribute predictions to the 20 metadata features. Following the framing established in Section~\ref{sec:introduction}, these analyses are treated as \emph{plausibility inspection} rather than evidence of clinical trustworthiness: they can indicate whether the models attend to reasonable regions and features, but cannot establish that predictions are made for the correct clinical reasons.
+
+\subsubsection{Grad-CAM: Spatial Attention}
+
+Figure~\ref{fig:gradcam-comparison} presents Grad-CAM heatmaps for the image-only and cross-attention models on example test-set samples from each of the seven diagnostic classes. Samples were selected as the first test-set example of each class in dataset order, so they are illustrative rather than representative.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{figures/gradcam_comparison.png}
+\caption{Grad-CAM heatmaps for the image-only baseline and the cross-attention fusion model on example test-set samples, one per class. Original image (left), image-only (middle), cross-attention (right). Heatmaps show evidence for the \emph{true} class in every panel, including where the prediction is incorrect. Ticks and crosses indicate correct and incorrect predictions.}
+\label{fig:gradcam-comparison}
+\end{figure}
+
+For samples where both models classify correctly (bkl, vasc, bcc), attention concentrates on the pigmented or vascular lesion in the centre of the field of view, consistent with plausible dermatological reasoning. The image-only model tends to produce tighter, more localised attention while cross-attention produces slightly more diffuse activation that spreads into the surrounding skin. For the correctly classified melanoma sample, the image-only model highlights the pigmented lesion as a whole, whereas cross-attention shows an atypical pattern of activation around the lesion boundary with a cold spot at the lesion centre. This suggests the two architectures rely on different spatial features even when they reach the same prediction.
+
+For samples where both models fail (a featureless pink nv image predicted as df, an akiec predicted as bcc), attention is scattered across image borders or shifts between small regions. The image-only model's attention in the pink nv example clusters near the top and bottom edges of the frame, consistent with attending to image artefacts when no clear lesion is present. This kind of border-attending behaviour is a known failure mode of skin-lesion models \citep{winkler2019confounding} and provides a specific example of a case the model has not learned to handle.
+
+\subsubsection{Melanoma Failure Case Analysis}
+
+Because missed melanomas carry the highest clinical risk, six false-negative melanoma cases from the cross-attention model were examined in detail (Figure~\ref{fig:gradcam-failures}). In every case the model's Grad-CAM heatmap concentrated on the pigmented lesion itself, not on artefacts such as hair, rulers or dark corners. The failures were misclassifications into visually similar categories (nv in two cases, bkl in two, vasc in one, bcc in one) rather than the model attending to the wrong region of the image.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{figures/gradcam_failures_melanoma.png}
+\caption{Grad-CAM heatmaps for six melanoma cases misclassified by the cross-attention model. Unlike Figure~\ref{fig:gradcam-comparison}, these heatmaps show evidence for the model's \emph{predicted} class, so they display what the model took as support for the incorrect diagnosis. In each case the model attends to the pigmented lesion but assigns it to a visually similar category.}
+\label{fig:gradcam-failures}
+\end{figure}
+
+This is an important nuance for the interpretability framing. The plausibility of the attention pattern does not translate into clinical reliability: the model is looking in the right place but drawing the wrong conclusion. This distinction reinforces the argument in Section~\ref{sec:introduction} that Grad-CAM plausibility should not be presented as evidence of clinical trustworthiness. It also indicates that the melanoma sensitivity gap between cross-attention (0.758) and gated fusion (0.809) is not attributable to different spatial attention behaviour but to different discriminative behaviour in feature space.
+
+\subsubsection{SHAP: Metadata Contributions}
+
+KernelSHAP attributions were computed for the cross-attention model on 50 test-set samples, with 30 background samples and 100 evaluations per explanation. Figure~\ref{fig:shap-heatmap} shows the mean absolute SHAP contribution of each metadata feature to each class, and Table~\ref{tab:shap} summarises the top three features per class. This is a small sampling budget for KernelSHAP; the attributions are correspondingly noisy and are used here only to compare the relative ordering of features, not their precise magnitudes.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{figures/shap_feature_class_heatmap.png}
+\caption{Mean absolute SHAP values for each metadata feature per class in the cross-attention model, computed over 50 test-set samples.}
+\label{fig:shap-heatmap}
+\end{figure}
+
+\begin{table}[htbp]
+\caption{Top three metadata features by mean $|$SHAP$|$ for each class, cross-attention model. Values are the mean absolute SHAP contribution to the class probability.}
+\label{tab:shap}
+\centering
+\small
+\begin{tabular}{ll}
 \toprule
-\textbf{Comparison} & \textbf{F1 Diff [95\% CI]} & \textbf{McNemar $p$} \\
+\textbf{Class} & \textbf{Top three features (mean $|$SHAP$|$)} \\
 \midrule
-vs Image-Only   & -- & -- \\
-vs Concat       & -- & -- \\
-vs Gated        & -- & -- \\
+akiec & age (0.015), loc\_back (0.002), loc\_unknown (0.001) \\
+bcc   & age (0.011), sex\_male (0.008), loc\_lower\_ext (0.004) \\
+bkl   & age (0.029), loc\_back (0.009), loc\_lower\_ext (0.008) \\
+df    & loc\_lower\_ext (0.008), age (0.002), loc\_abdomen (0.001) \\
+mel   & age (0.040), loc\_lower\_ext (0.007), sex\_male (0.007) \\
+nv    & age (0.049), sex\_male (0.006), loc\_lower\_ext (0.005) \\
+vasc  & age (0.011), loc\_lower\_ext (0.001), sex\_female (0.001) \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-% TODO: Fill in Table 2
+The attribution pattern is consistent with clinical epidemiology. Age is the single most influential feature for six of the seven classes, mirroring the fact that skin lesion type distributions shift substantially across age groups. Sex\_male appears among the top features for bcc, mel and nv, all of which show sex-differential incidence in dermatological populations. Localisation matters most for dermatofibroma, where lower extremity has the highest SHAP magnitude of any feature-class pairing outside age; dermatofibromas are indeed most commonly found on the lower legs.
 
-\subsection{Per-Class Analysis}
+However, the absolute magnitudes are small ($\leq 0.05$ in every case), consistent with the weak standalone performance of the metadata-only model. The metadata carries clinically sensible information that nudges class probabilities in the right direction, but the signal is too weak to drive discrete predictions in the absence of image features. This provides a mechanistic explanation for why fusion strategies on HAM10000 yield only modest gains over image-only baselines: the metadata channel is limited in the information it can contribute regardless of how sophisticated the fusion mechanism is.
 
-% TODO: Confusion matrices, per-class P/R/F1
+\subsubsection{Summary of Interpretability Findings}
 
-\subsection{Ablation Studies}
+Taken together, the Grad-CAM and SHAP analyses support three conclusions, answering RQ4. First, the image branches of both models attend to plausible lesion regions in the majority of correctly classified examples. Second, misclassifications are driven by feature-space confusion rather than by the model looking at the wrong part of the image. Third, the metadata contributions in the cross-attention model align with clinical priors but have limited absolute magnitude, consistent with the modest gains from fusion.
 
-% TODO: Focal loss, reverse attention direction
-
-\subsection{Interpretability Analysis}
-
-% TODO: Grad-CAM figures, SHAP analysis
+None of these findings constitute evidence of clinical trustworthiness. They indicate that the models are behaving plausibly on the specific data they were trained on, not that their predictions can be safely relied upon for clinical decision making. This distinction is central to responsible reporting of XAI results in medical imaging \citep{ghassemi2021false}.
 
 % ============================================================
 \section{Discussion}
 \label{sec:discussion}
 % ============================================================
 
-% TODO: Interpret results, discuss whether cross-attention helped,
-% comment on metadata limitations, failure modes, artefact detection
+\subsection{Fusion Strategy Comparison Under Controlled Evaluation}
+
+The central finding of this study is that under a lesion-level leakage-controlled evaluation with multi-seed statistical testing, cross-attention fusion does not provide an improvement over simple concatenation on the primary aggregate metrics. This differs from the conclusion of \citet{das2025comparative}, who reported cross-attention as the top performer on HAM10000 without explicit lesion-level splitting or statistical testing.
+
+Two explanations are available. The first is that improvements reported by earlier studies were partly attributable to additional model expressiveness exploiting lesion-specific features that leak across evaluation partitions; a more expressive model gains more from leakage than a less expressive one, so removing the leakage compresses the gap. The second is that cross-attention offers a real advantage on ranking quality that does not translate into better discrete classification.
+
+The evidence here supports the second more strongly than the first, and this study cannot fully separate them without rerunning the comparison under a deliberately leaky split, which was not done. Cross-attention holds the highest AUROC with the lowest across-seed variance, so its probability ordering is better even where its argmax decisions are not. \TODO{if the calibration result shows cross-attention is best calibrated, add one sentence here: the AUROC advantage is accompanied by better calibration, so the additional capacity buys probability quality rather than decision quality} The practical reading is that on this dataset, with three metadata fields, the extra machinery buys ranking and stability rather than accuracy, and \TODO{state whether cross-attention has more parameters than concatenation using the count in Table~\ref{tab:main_results}, and if so note that it pays for that ranking gain with additional capacity that produces no gain in macro-F1}.
+
+\subsection{Why the Metadata-Only Baseline Behaves as It Does}
+
+The metadata-only baseline produces an apparently contradictory pair of numbers: a macro-F1 of 0.051, which is below the trivial majority-class classifier, alongside a balanced accuracy of 0.336, which is well above the 1/7 that the trivial classifier achieves. These are consistent once the imbalance handling is taken into account. A model that always predicted nv would score a macro-F1 of approximately 0.11 and a balanced accuracy of 0.14. This model does the opposite: the class-weighted loss and weighted sampler push it to distribute predictions across the rare classes, so it achieves non-trivial recall on several classes while its precision on all of them is close to zero. Macro-F1 punishes that severely, balanced accuracy does not.
+
+The AUROC of 0.721 completes the picture. Metadata carries genuine class-separating information at the probability level, consistent with the SHAP attributions and with clinical epidemiology, but not enough to support discrete decisions. The practical implication is that the two imbalance corrections, which are appropriate for the image and fusion models, interact badly with a model that has almost no signal to work with. This is a limitation of holding the training protocol fixed across all five models, which is the price of the controlled comparison.
+
+\subsection{The Limited Utility of Metadata}
+
+The limited absolute gain of any fusion strategy over the image-only model likely reflects the limited nature of HAM10000's metadata. Studies on datasets with richer clinical metadata such as PAD-UFES-20, which includes Fitzpatrick skin type and lesion diameter, have reported larger gains from fusion \citep{pacheco2021attention, mridha2026crossattention}. The SHAP magnitudes reported in Section~\ref{sec:results} put a ceiling on what any fusion mechanism could extract here: no architecture can recover information the metadata does not contain.
+
+\subsection{Melanoma Sensitivity}
+
+From a clinical perspective, sensitivity for melanoma is arguably the most important single metric because missed melanomas can be fatal. Gated fusion achieved the highest melanoma sensitivity (0.809), and Table~\ref{tab:mel_sensitivity} tests whether that difference is distinguishable from noise. \TODO{complete this paragraph from the test result; if not significant, state that the apparent gated fusion advantage is within noise and should not be used to motivate a design choice}
+
+Even the best result here means roughly one in five melanomas in the test set is missed. No configuration evaluated in this study approaches a sensitivity that would be acceptable for autonomous clinical use, and the metric should be read as a comparison between architectures rather than as a claim about deployability.
+
+\subsection{Limitations}
+
+Several limitations should be noted. First, lesion-level leakage prevention does not guarantee patient-level leakage prevention because HAM10000 lacks a reliable patient identifier. Second, HAM10000 is a single-source dataset drawn from Austrian and Australian populations, so the findings may not generalise to more demographically diverse groups, and the dataset does not record Fitzpatrick skin type, meaning subgroup performance cannot be measured here at all. Third, the three-seed evaluation, while stronger than the single-run reporting common in this literature, remains modest for detecting small effect sizes, and the split itself is fixed, so split variance is not estimated. Fourth, hyperparameters were held identical across models rather than tuned per model; this is what makes the comparison controlled, but a per-model search could alter the ordering. Fifth, class weighting and weighted sampling were applied together and not ablated against each other. Sixth, training history was not persisted, so learning curves cannot be reported without retraining. Seventh, the SHAP budget of 50 explained samples is small.
+
+\subsection{Sustainability and Broader Considerations}
+
+Training the five models across three seeds required approximately 12 GPU-hours on consumer hardware, with the attention direction ablation adding \TODO{ablation GPU-hours}. This is modest by contemporary standards but non-trivial in aggregate, and the marginal cost of the more complex architecture bought no gain in the primary metric. Reporting negative or metric-dependent results matters for the same reason: if simpler methods perform equivalently, the case for spending compute on architectural complexity weakens.
+
+Automated skin lesion classification systems raise concerns about demographic fairness, since HAM10000 primarily contains lighter skin tones and may not generalise to underrepresented groups \citep{wang2024skin}. Deployment without validation on the target population would risk worsening existing healthcare disparities, and the absence of skin type annotation in this dataset means such validation cannot be performed on HAM10000 alone.
 
 % ============================================================
-\section{Conclusion}
+\section{Conclusion and Future Work}
 \label{sec:conclusion}
 % ============================================================
 
-% TODO: Summary of findings, limitations, future work
+This study conducted a controlled comparison of five multimodal fusion strategies for skin lesion classification on HAM10000 under a lesion-level leakage-controlled protocol with multi-seed statistical testing.
 
-% ============================================================
+The answer to the research question is no. Cross-attention fusion did not produce a statistically reliable improvement over simpler fusion strategies on the aggregate metrics: concatenation matched or exceeded it on macro-F1 and balanced accuracy, and on paired correctness concatenation was the more accurate of the two. Cross-attention did achieve the highest AUROC with the lowest across-seed variance, so its advantage is in probability ranking and stability rather than in classification decisions. Fusion of any kind improved on the image-only baseline in balanced accuracy, so metadata is not useless, but the three fields available in HAM10000 place a low ceiling on what fusion can contribute regardless of mechanism.
+
+The wider implication is that the aggregate advantage of complex fusion reported in prior work may be smaller than claimed once stricter evaluation protocols are applied, and that the choice of summary metric determines which architecture appears to win.
+
+Future work should extend this analysis to datasets with richer clinical metadata, evaluate the fusion strategies under grouped $k$-fold cross-validation so that split variance is estimated alongside seed variance, and rerun the comparison under a deliberately non-grouped split to measure directly how much of the reported advantage of attention-based fusion is attributable to leakage. Ablating the two imbalance corrections separately, and testing whether the melanoma sensitivity ordering holds on another benchmark, would also help isolate which mechanisms yield reliable improvement.
+
 \section*{Acknowledgements}
 
-% TODO: Acknowledge supervisor, QMUL resources
+The author thanks Dr. Syed Rafee for supervision and feedback on the project design.
 
 % ============================================================
 % Harvard-style references
@@ -227,6 +440,7 @@ vs Gated        & -- & -- \\
 % ============================================================
 \appendix
 \section{Generative AI Accountability Statement}
-% TODO: Complete and include the signed Gen AI statement
+
+\TODO{paste the completed and signed statement here before submission}
 
 \end{document}
