@@ -1,9 +1,7 @@
 """Focal loss ablation.
 
-Objective 6 of the project definition specifies progressive imbalance
-handling: class weighting, weighted sampling and augmentation, "followed by
-focal loss". Focal loss is implemented in the Trainer but has never been
-run. This runs it.
+Swaps the class-weighted cross-entropy term for focal loss and leaves
+everything else fixed.
 
 What this ablation actually varies. The Trainer's focal loss path computes
 cross-entropy without class weights, so switching it on does not add a
@@ -17,17 +15,17 @@ That is a clean single-variable swap of the loss function, which is the
 only interpretable version of this ablation. Stacking focal loss on top of
 class weights would change two things at once.
 
-Run on cross-attention by default, since that is the model the paper is
-built around. Add concatenation with --models if time allows.
+Runs on cross-attention by default, since that is the model under study.
+Other models can be added with --models.
 
-Outputs, named so they cannot collide with anything existing:
+Outputs, named so they cannot collide with the primary runs:
     results/cross_attention_focal_seed{S}_best.pth
     results/cross_attention_focal_seed{S}_test_results.json
     results/probs/cross_attention_focal_seed{S}_probs.npy
     results/cross_attention_focal_multi_seed_summary.json
 
 Usage (PowerShell), from the project root:
-    python -u run_focal_loss_ablation.py --check     # 10 seconds, do this first
+    python -u run_focal_loss_ablation.py --check     # verify the Trainer API first
     python -u run_focal_loss_ablation.py
     python -u run_focal_loss_ablation.py --models cross_attention concat_fusion
 """
@@ -220,8 +218,8 @@ def main():
         print(f"\n{'='*72}\n{name} summary\n{'='*72}")
         for k, v in agg.items():
             print(f"  {k:<20} {v['mean']:.4f} +/- {v['std']:.4f}")
-        print("\n  Compare against the same model's row in Table II, which used")
-        print("  class-weighted cross-entropy with the same sampler.")
+        print("\n  Compare against the same model's row in the main results table,")
+        print("  which used class-weighted cross-entropy with the same sampler.")
 
 
 if __name__ == "__main__":

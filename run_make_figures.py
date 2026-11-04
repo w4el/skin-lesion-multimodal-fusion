@@ -1,4 +1,4 @@
-"""Generate the result figures that the paper is currently missing.
+"""Generate the result figures used in the paper.
 
     figures/confusion_matrices.png   row-normalised, averaged over seeds
     figures/roc_per_class.png        per-class ROC for cross-attention
@@ -11,7 +11,7 @@ first.
 
 ROC and reliability curves are drawn from a single seed (42 by default),
 because averaging curves across seeds is not well defined; the
-seed-to-seed spread is reported numerically in Tables I and V instead.
+seed-to-seed spread is reported numerically in the results tables instead.
 
 Usage (PowerShell):
     python run_make_figures.py

@@ -1,15 +1,14 @@
-"""Statistical comparison, corrected.
+"""Paired statistical comparison of cross-attention against each baseline.
 
-Three changes from run_statistical_tests.py, each of which alters what the
-paper is allowed to claim.
+Three properties matter for how the results can be read.
 
 1. Direction is reported. McNemar's test compares paired correctness, so a
    significant result means the two models differ in plain accuracy, and
-   the sign of (b01 - b10) says which model is ahead. The original script
-   printed b01 and b10 but the paper read a significant p-value as evidence
-   that the models "make different kinds of errors", which is not what the
-   test measures. Every comparison here prints the favoured model
-   explicitly and the generated table carries b01 and b10 as columns.
+   the sign of (b01 - b10) says which model is ahead. A significant
+   p-value on its own says nothing about which model is better, and it is
+   not evidence that the models make different kinds of error. Every
+   comparison prints the favoured model, and the generated tables carry
+   b01 and b10 as columns.
 
 2. Tests are run per seed as well as pooled. Pooling three seeds gives
    4,482 rows, but those are the same 1,494 test images counted three
@@ -19,8 +18,8 @@ paper is allowed to claim.
    secondary, optimistic estimate.
 
 3. The bootstrap two-sided p-value is computed as
-   2 * min(P(diff <= 0), P(diff >= 0)), clipped to 1. The original
-   expression double-counted in the upper tail.
+   2 * min(P(diff <= 0), P(diff >= 0)), clipped to 1, so neither tail is
+   double-counted.
 
 An exact binomial test on the discordant pairs is reported alongside the
 chi-square approximation, because several discordant counts are small.
@@ -30,7 +29,7 @@ Outputs:
     tables/statistical_pooled.tex
     tables/statistical_perseed.tex
     tables/melanoma_sensitivity.tex
-    A block of ready-to-paste sentences printed at the end.
+    A summary of the key comparisons printed at the end.
 
 Usage (PowerShell):
     python run_statistical_tests_v2.py
@@ -303,7 +302,7 @@ def main():
     print(f"\nSaved {out_path}")
 
     build_tables(results, baselines, models)
-    print_snippets(results, baselines)
+    print_summary(results, baselines)
 
 
 # ---------------------------------------------------------------------------
@@ -417,14 +416,13 @@ def build_tables(results, baselines, models):
 
 
 # ---------------------------------------------------------------------------
-# Ready-to-paste prose
+# Summary of the comparisons that carry the argument
 # ---------------------------------------------------------------------------
 
-def print_snippets(results, baselines):
+def print_summary(results, baselines):
     print("\n" + "=" * 78)
-    print("SENTENCES TO PASTE INTO THE PAPER")
-    print("Every number below comes from your result files. Check each one")
-    print("reads correctly before pasting; do not paste blind.")
+    print("KEY COMPARISONS")
+    print("All values below are computed from the stored predictions.")
     print("=" * 78)
 
     concat = results["pooled"].get("concat_fusion")
@@ -438,7 +436,7 @@ def print_snippets(results, baselines):
             else "cross-attention is the more accurate of the two"
         )
         print(f"""
-[Results, statistical comparison]
+[Cross-attention vs concatenation]
 On pooled predictions, cross-attention and concatenation disagree on
 {mc['n_discordant']} test cases. Cross-attention is correct on {mc['b01']} of
 these and concatenation on {mc['b10']}, so under McNemar's test
@@ -449,7 +447,7 @@ these and concatenation on {mc['b10']}, so under McNemar's test
 """)
 
     print("""
-[Results, reconciling the two tests]
+[Reconciling McNemar with macro-F1]
 McNemar's test and the macro-F1 interval measure different things, which is
 why they can point in different directions. McNemar operates on plain
 paired correctness, which on HAM10000 is dominated by melanocytic nevi at
@@ -462,7 +460,7 @@ per-class balance.
 """)
 
     print("""
-[Methodology, pooling caveat]
+[Why pooled p-values are optimistic]
 Pooled tests treat 4,482 predictions as independent observations, but they
 comprise the same 1,494 test images evaluated under three random seeds.
 This inflates the effective sample size and shrinks p-values accordingly.

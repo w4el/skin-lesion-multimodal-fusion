@@ -18,11 +18,9 @@ import numpy as np
 import torch
 
 from src.data.dataset import create_dataloaders
-from src.data.metadata import MetadataEncoder
 from src.data.split import create_splits, load_splits
 from src.training.statistics import compare_all_models
 from src.training.trainer import run_multi_seed
-from src.utils.seed import set_seed
 
 
 def find_image_dirs(data_dir: str):

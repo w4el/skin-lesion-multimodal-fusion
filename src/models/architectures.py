@@ -10,12 +10,10 @@ All models share the same backbone and hyperparameter structure where
 applicable, to isolate the effect of the fusion strategy.
 """
 
-from typing import Optional
 
 import timm
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 
 # ---------------------------------------------------------------------------
@@ -261,9 +259,10 @@ class CrossAttentionFusion(nn.Module):
     """Cross-attention fusion between image patches and metadata.
 
     Image patch features serve as queries, and metadata embeddings serve
-    as keys and values. This allows each spatial region of the image to
-    attend to clinical context, which is the natural direction: metadata
-    modulates how the model interprets the image.
+     as keys and values. The argument for this direction is that each spatial
+    region can attend to clinical context. Note that the reverse-direction
+    ablation found no measurable difference between the two, so treat this
+    as a design choice rather than a justified one.
 
     Args:
         metadata_dim: Dimensionality of encoded metadata.

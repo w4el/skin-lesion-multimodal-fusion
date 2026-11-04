@@ -7,24 +7,22 @@ align with clinical priors?
 """
 
 from pathlib import Path
-from typing import List
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import shap
 import torch
-import torch.nn as nn
 
 from src.data.dataset import create_dataloaders, HAM10000Dataset, get_transforms
 from src.data.metadata import (
-    DIAGNOSIS_LABELS,
     DIAGNOSIS_NAMES,
     LOCALIZATION_CATEGORIES,
     SEX_CATEGORIES,
 )
 from src.data.split import load_splits
 from src.models.architectures import build_model
+from src.xai.shap_utils import MetadataOnlyWrapper
 
 
 # Feature names matching the encoder output order
@@ -33,47 +31,6 @@ FEATURE_NAMES = (
     + [f"sex_{s}" for s in SEX_CATEGORIES]
     + [f"loc_{l.replace(' ', '_')}" for l in LOCALIZATION_CATEGORIES]
 )
-
-
-class MetadataOnlyWrapper(nn.Module):
-    """Wrap the fusion model to expose metadata as the only input.
-
-    Image features are computed once from a fixed image (or averaged
-    across a batch) and cached so SHAP only perturbs metadata.
-    """
-
-    def __init__(self, model, fixed_image: torch.Tensor):
-        super().__init__()
-        self.model = model
-        self.fixed_image = fixed_image  # (1, 3, 224, 224)
-
-    def forward(self, metadata_np: np.ndarray) -> np.ndarray:
-        """Accept numpy metadata, return numpy probabilities.
-
-        Args:
-            metadata_np: (N, 20) numpy array of metadata vectors.
-
-        Returns:
-            (N, 7) numpy array of class probabilities.
-        """
-        device = next(self.model.parameters()).device
-        metadata = torch.tensor(metadata_np, dtype=torch.float32).to(device)
-        n = metadata.shape[0]
-
-        # Process in mini-batches to avoid OOM / indexing overflow
-        chunk_size = 16
-        all_probs = []
-        with torch.no_grad():
-            for i in range(0, n, chunk_size):
-                meta_chunk = metadata[i:i+chunk_size]
-                image_chunk = self.fixed_image.expand(
-                    meta_chunk.shape[0], -1, -1, -1
-                ).to(device)
-                logits = self.model(image_chunk, meta_chunk)
-                probs = torch.softmax(logits.float(), dim=1)
-                all_probs.append(probs.cpu().numpy())
-
-        return np.concatenate(all_probs, axis=0)
 
 
 def compute_shap_values(

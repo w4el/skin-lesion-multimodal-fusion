@@ -5,7 +5,7 @@ tables/ as a LaTeX fragment that dissertation.tex reads with \\input, so the
 paper cannot drift from the data.
 
 Produces:
-    tables/main_results.tex        Table I, with parameter counts and a
+    tables/main_results.tex        main results, with parameter counts and a
                                    majority-class reference row
     tables/perclass_f1.tex         per-class F1 for every model
     tables/perclass_cross_attn.tex per-class P/R/F1 for cross-attention
