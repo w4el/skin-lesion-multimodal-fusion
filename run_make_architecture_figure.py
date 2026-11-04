@@ -1,14 +1,12 @@
-"""Generate the architecture schematic for the methodology section.
+"""Draw the five-panel architecture schematic.
 
-The paper currently describes five architectures in prose and equations
-with no diagram. Methodology sits under the Achievement criterion, which
-carries the largest single weight in the marking scheme, and a reader
-cannot hold five fusion variants in their head from text alone.
+The five variants differ only in what sits between the two encoders and
+the classifier, which is easier to see side by side than to follow from
+prose and equations.
 
-Produces figures/architectures.png, a five-panel schematic sized for a
-two-column IEEE figure*.
+Output: figures/architectures.png, sized for a two-column IEEE figure*.
 
-Usage (PowerShell):
+Usage:
     python run_make_architecture_figure.py
 """
 

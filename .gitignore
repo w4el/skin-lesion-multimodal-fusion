@@ -1,11 +1,11 @@
 # Data (public dataset, see README for download instructions)
-data/
+data/*
 !data/.gitkeep
+!data/HAM10000_metadata.csv
 
 # Model checkpoints and large binaries
 results/*.pth
 results/xai/*.npy
-results/probs/*.npy
 
 # LaTeX build artefacts
 *.aux

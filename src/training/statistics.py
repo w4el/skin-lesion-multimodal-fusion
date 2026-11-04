@@ -5,7 +5,7 @@ determine whether performance differences between models are
 statistically reliable.
 """
 
-from typing import Dict, Tuple
+from typing import Dict
 
 import numpy as np
 from scipy import stats
@@ -16,18 +16,12 @@ def mcnemar_test(
     preds_b: np.ndarray,
     labels: np.ndarray,
 ) -> Dict[str, float]:
-    """Perform McNemar's test comparing two models' predictions.
+    """McNemar's test on paired correctness for two models.
 
-    Tests whether the two models make different kinds of errors
-    at significantly different rates.
-
-    Args:
-        preds_a: Predictions from model A.
-        preds_b: Predictions from model B.
-        labels: Ground truth labels.
-
-    Returns:
-        Dictionary with test statistic and p-value.
+    Counts b01 (A correct, B wrong) and b10 (A wrong, B correct) and tests
+    whether those two counts differ. A significant result means the models
+    differ in plain accuracy, in the direction of the larger count. It does
+    not say anything about the models making different *kinds* of error.
     """
     correct_a = (preds_a == labels)
     correct_b = (preds_b == labels)

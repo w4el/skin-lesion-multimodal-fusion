@@ -22,7 +22,6 @@ from sklearn.metrics import (
 from torch.amp import GradScaler, autocast
 from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts
 from torch.utils.data import DataLoader
-from tqdm import tqdm
 
 from src.data.metadata import DIAGNOSIS_LABELS, DIAGNOSIS_NAMES
 from src.utils.seed import set_seed
@@ -348,7 +347,7 @@ def evaluate_on_test(
     print(f"\nTest Results for {experiment_name}:")
     for k, v in metrics.items():
         print(f"  {k}: {v:.4f}")
-    print(f"\nPer-class report:")
+    print("\nPer-class report:")
     print(classification_report(labels, preds, target_names=class_names))
     print(f"Confusion matrix:\n{conf_mat}")
 

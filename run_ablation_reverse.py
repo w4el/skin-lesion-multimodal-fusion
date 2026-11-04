@@ -23,10 +23,8 @@ Usage (PowerShell):
 
 import argparse
 import json
-from pathlib import Path
 
 import numpy as np
-import torch
 from sklearn.metrics import (
     balanced_accuracy_score,
     classification_report,
@@ -164,7 +162,7 @@ def main():
     print("Reverse-direction ablation summary")
     for key, vals in summary["aggregated"].items():
         print(f"  {key}: {vals['mean']:.4f} +/- {vals['std']:.4f}")
-    print("Compare against the primary cross-attention row in Table I.")
+    print("Compare against the primary cross-attention row in the main results table.")
     print(f"{'='*60}")
 
 

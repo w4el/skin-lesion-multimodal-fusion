@@ -338,7 +338,7 @@ def main():
                 gap = x[k]["mean"] - c[k]["mean"]
                 print(f"  {k}: cross-attention minus concatenation = {gap:+.4f}  (leaky split)")
             print("\n  Compare each against the same gap on the grouped split,")
-            print("  in Table II. If the gap is larger here, leakage was")
+            print("  under the grouped split. If the gap is larger here, leakage was")
             print("  inflating the advantage of the more expressive model.")
             print(f"{'-'*72}")
 

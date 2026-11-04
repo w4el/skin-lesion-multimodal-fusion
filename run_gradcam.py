@@ -24,41 +24,7 @@ from src.data.dataset import create_dataloaders
 from src.data.metadata import DIAGNOSIS_LABELS, DIAGNOSIS_NAMES
 from src.data.split import load_splits
 from src.models.architectures import build_model
-
-
-def get_target_layer(model, model_name: str):
-    """Get the target conv layer for Grad-CAM."""
-    if model_name == "image_only":
-        # EfficientNet-B0's last conv block
-        return model.backbone.backbone.conv_head
-    elif model_name == "cross_attention":
-        # Same backbone, before patches are extracted
-        return model.image_backbone.backbone.conv_head
-    else:
-        raise ValueError(f"Grad-CAM not supported for {model_name}")
-
-
-class ModelWrapper(nn.Module):
-    """Wrapper so Grad-CAM sees a single-input model.
-
-    Grad-CAM expects model(image) -> logits, but our models take
-    model(image, metadata). This wrapper fixes metadata to a specific
-    value.
-    """
-
-    def __init__(self, model, metadata):
-        super().__init__()
-        self.model = model
-        self.metadata = metadata
-
-    def forward(self, image):
-        # metadata may be a single row; broadcast to match batch
-        batch_size = image.shape[0]
-        if self.metadata.shape[0] != batch_size:
-            metadata = self.metadata.expand(batch_size, -1)
-        else:
-            metadata = self.metadata
-        return self.model(image, metadata)
+from src.xai.gradcam import ModelWrapper, get_target_layer
 
 
 def load_image_for_gradcam(
@@ -214,10 +180,6 @@ def analyse_failure_cases(
 ):
     """Find and visualise samples where cross-attention misclassifies melanoma
     (clinically important false negatives)."""
-    test_ids = set(splits["test"])
-    test_df = metadata_df[metadata_df["image_id"].isin(test_ids)]
-    mel_df = test_df[test_df["dx"] == "mel"]
-
     # Load cross-attention predictions from saved results
     import json
     with open("results/cross_attention_seed42_test_results.json") as f:
